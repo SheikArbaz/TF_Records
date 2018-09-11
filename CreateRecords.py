@@ -39,7 +39,7 @@ tf.flags.DEFINE_integer("train_shards", 8,
 tf.flags.DEFINE_integer("num_threads", 8,
 												"Number of threads to preprocess the images.")
 tf.flags.DEFINE_string("tps_dir", "",
-                        "Directory contains tps transformed images.")
+						"Directory contains tps transformed images.")
 
 FLAGS = tf.flags.FLAGS
 
@@ -138,9 +138,12 @@ def _to_tf_example(image, decoder):
 	
 	tps_name = image.out_id+'.mat'#tps
 	if os.path.isfile(FLAGS.tps_dir + tps_name):
-    	print('TPS file exists')
-    	tps_image = sio.loadmat(FLAGS.tps_dir + tps_name)
-    	tps_control_points = tps_image["control_points"].reshape(-1)
+		print('TPS file exists')
+		tps_image = sio.loadmat(FLAGS.tps_dir + tps_name)
+		tps_control_points = tps_image["control_points"].reshape(-1)
+	else:
+		print("Skipping samples without TPS control points: %s" % image.image_id)
+		return
 
 
 	tf_example = tf.train.Example(features=tf.train.Features(feature={
