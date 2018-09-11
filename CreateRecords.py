@@ -38,6 +38,8 @@ tf.flags.DEFINE_integer("train_shards", 8,
 												"Number of shards in training TFRecord files.")
 tf.flags.DEFINE_integer("num_threads", 8,
 												"Number of threads to preprocess the images.")
+tf.flags.DEFINE_string("tps_dir", "",
+                        "Directory contains tps transformed images.")
 
 FLAGS = tf.flags.FLAGS
 
@@ -134,7 +136,11 @@ def _to_tf_example(image, decoder):
 	height = decoded_image.shape[0]
 	width = decoded_image.shape[1]
 	
-	
+	tps_name = image.out_id+'.mat'#tps
+	if os.path.isfile(FLAGS.tps_dir + tps_name):
+    	print('TPS file exists')
+    	tps_image = sio.loadmat(FLAGS.tps_dir + tps_name)
+    	tps_control_points = tps_image["control_points"].reshape(-1)
 
 
 	tf_example = tf.train.Example(features=tf.train.Features(feature={
@@ -146,7 +152,7 @@ def _to_tf_example(image, decoder):
 				'trg_image': _bytes_feature(encoded_trg),
 				'height': _int64_feature(height),
 				'width': _int64_feature(width),
-				
+				'tps_control_points': _float_feature(tps_control_points),
 				}))
 
 	return tf_example
