@@ -24,12 +24,12 @@ import tensorflow as tf
 
 tf.flags.DEFINE_string("out_dir", "output/",
 											 "Image directory.")
-tf.flags.DEFINE_string("src_dir", "source/",
+tf.flags.DEFINE_string("src_dir", "input/",
 											 "Directory containing src images.")
 tf.flags.DEFINE_string("trg_dir", "target/",
 											 "Directory containing masks.")
 
-tf.flags.DEFINE_string("train_label_file", "datalist.txt",
+tf.flags.DEFINE_string("train_label_file", "datalist1.txt",
 											 "Training text file.")
 tf.flags.DEFINE_string("tf_dir", "tfrecord", "Output data directory.")
 tf.flags.DEFINE_string("prefix", "", "Prefix of the tensorflow record files.")
@@ -38,7 +38,7 @@ tf.flags.DEFINE_integer("train_shards", 8,
 												"Number of shards in training TFRecord files.")
 tf.flags.DEFINE_integer("num_threads", 8,
 												"Number of threads to preprocess the images.")
-tf.flags.DEFINE_string("tps_dir", "",
+tf.flags.DEFINE_string("tps_dir", "control_points/",
 						"Directory contains tps transformed images.")
 
 FLAGS = tf.flags.FLAGS
@@ -136,13 +136,13 @@ def _to_tf_example(image, decoder):
 	height = decoded_image.shape[0]
 	width = decoded_image.shape[1]
 	
-	tps_name = image.out_id+'.mat'#tps
+	tps_name = image.src_id+'_tps.mat'#tps
 	if os.path.isfile(FLAGS.tps_dir + tps_name):
 		print('TPS file exists')
 		tps_image = sio.loadmat(FLAGS.tps_dir + tps_name)
 		tps_control_points = tps_image["control_points"].reshape(-1)
 	else:
-		print("Skipping samples without TPS control points: %s" % image.image_id)
+		print("Skipping samples without TPS control points: %s" % image.out_id, tps_name)
 		return
 
 
@@ -277,6 +277,7 @@ def _load_and_process_metadata(label_file):
 	for item in image_pairs:
 		name1 = item.strip()
 		image_pair = [name1, name1[:-5]+'1.jpg_pad.jpg', name1[:-5]+'1.jpg_mask.jpg']
+		print(image_pair)
 		# print (image_pair)
 		image_metadata.append(ImageMetadata(image_pair[0], image_pair[1], image_pair[2]))
 		

@@ -84,10 +84,10 @@ def process_image(encoded_out,
 	image_summary("final_human", human)
 	image_summary("final_prod_image", prod_image)
 	
-	# Rescale to [-1,1] instead of [0, 1]
-	# image = (image - 0.5) * 2.0
-	# human = (human - 0.5) * 2.0
-	# prod_image = (prod_image - 0.5) * 2.0
+	#Rescale to [-1,1] instead of [0, 1]
+	image = (image - 0.5) * 2.0
+	human = (human - 0.5) * 2.0
+	prod_image = (prod_image - 0.5) * 2.0
 	
 		
 	
@@ -123,7 +123,7 @@ def parse_tf_example(serialized, stage=""):
 	width = tf.cast(features["width"], tf.int32)
 
 	tps_points = features["tps_control_points"]
-	# tps_points = tf.sparse_tensor_to_dense(tps_points, default_value=0.)
+	tps_points = tf.sparse_tensor_to_dense(tps_points, default_value=0.)
 	# tps_points = tf.reshape(tps_points, tf.stack([2,10,10]))
 
 	tps_points = tf.reshape(tps_points,[1,100,2])
