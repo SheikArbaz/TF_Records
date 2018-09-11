@@ -112,6 +112,7 @@ def parse_tf_example(serialized, stage=""):
 					"trg_image": tf.FixedLenFeature([], tf.string),
 					"height": tf.FixedLenFeature([], tf.int64),
 					"width": tf.FixedLenFeature([], tf.int64),
+					"tps_control_points": tf.VarLenFeature(tf.float32),
 			}
 	)
 	encoded_out = features["out_image"]
@@ -120,8 +121,16 @@ def parse_tf_example(serialized, stage=""):
 
 	height = tf.cast(features["height"], tf.int32)
 	width = tf.cast(features["width"], tf.int32)
+
+	tps_points = features["tps_control_points"]
+	# tps_points = tf.sparse_tensor_to_dense(tps_points, default_value=0.)
+	# tps_points = tf.reshape(tps_points, tf.stack([2,10,10]))
+
+	tps_points = tf.reshape(tps_points,[1,100,2])
+	tps_points = tf.cast(tps_points, dtype=tf.float32)
+	#tps_points = tf.transpose(tf.reshape(tps_points, tf.stack([2, 100]))) * 2 - 1
 	
-	return (encoded_out, encoded_src, encoded_trg, features["out_id"],features["src_id"],features["trg_id"])
+	return (encoded_out, encoded_src, encoded_trg, features["out_id"],features["src_id"],features["trg_id"], tps_points)
 def prefetch_input_data(reader,
 												file_pattern,
 												is_training,
@@ -208,12 +217,12 @@ def build_input():
 
 	for thread_id in range(num_preprocess_threads):
 		serialized_example = input_queue.dequeue()
-		(encoded_out, encoded_src, encoded_trg, out_id, src_id, trg_id) = parse_tf_example(serialized_example)
+		(encoded_out, encoded_src, encoded_trg, out_id, src_id, trg_id, tps_points) = parse_tf_example(serialized_example)
 
 		#Body Segment is Human now
 		(out_image, src_image, trg_image) = process_image(encoded_out, encoded_src, encoded_trg)
 
-		images_and_maps.append([out_image, src_image, trg_image, out_id, src_id, trg_id])
+		images_and_maps.append([src_image, trg_image,out_image, tps_points])
 
 	# Batch inputs.
 	queue_capacity = (7 * num_preprocess_threads *
@@ -225,8 +234,8 @@ def build_input():
 														 name="batch")
 
 def main():
-	(out_image, src_image, trg_image, out_id, src_id, trg_id)=build_input()
-	print(out_image.shape, src_image.shape, trg_image.shape)
+	(src_image, trg_image,out_image, tps_points)=build_input()
+	print(out_image.shape, src_image.shape, trg_image.shape, tps_points.shape)
 	coord = tf.train.Coordinator()
 	sess = tf.Session()
 	threads = tf.train.start_queue_runners(sess=sess, coord=coord)
